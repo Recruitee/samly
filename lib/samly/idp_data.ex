@@ -34,6 +34,7 @@ defmodule Samly.IdpData do
             fingerprints: [],
             esaml_idp_rec: Esaml.esaml_idp_metadata(),
             esaml_sp_rec: Esaml.esaml_sp(),
+            target_default_url: nil,
             valid?: false
 
   @type t :: %__MODULE__{
@@ -61,6 +62,7 @@ defmodule Samly.IdpData do
           fingerprints: [binary()],
           esaml_idp_rec: :esaml_idp_metadata,
           esaml_sp_rec: :esaml_sp,
+          target_default_url: nil | binary(),
           valid?: boolean()
         }
 
@@ -115,6 +117,7 @@ defmodule Samly.IdpData do
       | id: id,
         sp_id: sp_id,
         base_url: Map.get(opts_map, :base_url),
+        target_default_url: Map.get(opts_map, :target_default_url),
         metadata: Map.get(opts_map, :metadata)
     }
     |> set_metadata_file(opts_map)
