@@ -110,10 +110,24 @@ defmodule Samly.Helper do
 
   defp decode_saml_payload(saml_encoding, saml_payload) do
     try do
-      xml = :esaml_binding.decode_response(saml_encoding, saml_payload)
+      xml = decode_response(saml_encoding, saml_payload)
       {:ok, xml}
     rescue
       error -> {:error, {:invalid_response, "#{inspect(error)}"}}
     end
+  end
+
+  defp decode_response(_, saml_payload) do
+    data = :base64.decode(saml_payload)
+
+    try do
+      data
+      |> :zlib.unzip()
+      |> :erlang.binary_to_list()
+    rescue
+      ErlangError -> :erlang.binary_to_list(data)
+    end
+    |> :xmerl_scan.string(namespace_conformant: true, comments: false)
+    |> elem(0)
   end
 end
