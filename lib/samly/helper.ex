@@ -2,6 +2,7 @@ defmodule Samly.Helper do
   @moduledoc false
 
   require Samly.Esaml
+  require Logger
   alias Samly.{Assertion, Esaml, IdpData}
 
   @spec get_idp(binary) :: nil | IdpData.t()
@@ -68,6 +69,11 @@ defmodule Samly.Helper do
   end
 
   def decode_idp_auth_resp(sp, saml_encoding, saml_response) do
+
+    Logger.info(sp, function: "decode_idp_auth_resp", variable: "sp")
+    Logger.info(saml_encoding, function: "decode_idp_auth_resp", variable: "saml_encoding")
+    Logger.info(saml_response, function: "decode_idp_auth_resp", variable: "saml_response")
+
     with {:ok, xml_frag} <- decode_saml_payload(saml_encoding, saml_response),
          {:ok, assertion_rec} <- :esaml_sp.validate_assertion(xml_frag, sp) do
       {:ok, Assertion.from_rec(assertion_rec)}
@@ -111,6 +117,9 @@ defmodule Samly.Helper do
   defp decode_saml_payload(saml_encoding, saml_payload) do
     try do
       xml = :esaml_binding.decode_response(saml_encoding, saml_payload)
+
+      Logger.info(xml, function: "decode_saml_payload", variable: "xml_frag")
+
       {:ok, xml}
     rescue
       error -> {:error, {:invalid_response, "#{inspect(error)}"}}

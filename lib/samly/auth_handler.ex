@@ -50,6 +50,9 @@ defmodule Samly.AuthHandler do
       csrf_token: get_csrf_token()
     ]
 
+    Logger.info(opts, function: "initiate_sso_req", variable: "opts")
+    Logger.info(EEx.eval_string(@sso_init_resp_template, opts), function: "initiate_sso_req", variable: "eval_string_result")
+
     conn
     |> put_resp_header("content-type", "text/html")
     |> send_resp(200, EEx.eval_string(@sso_init_resp_template, opts))
@@ -63,15 +66,23 @@ defmodule Samly.AuthHandler do
     target_url = conn.private[:samly_target_url] || "/"
     assertion_key = get_session(conn, "samly_assertion_key")
 
+    Logger.info(assertion_key, function: "send_signin_req", variable: "assertion_key")
+
     case State.get_assertion(conn, assertion_key) do
       %Assertion{idp_id: ^idp_id} ->
+        Logger.info(target_url, function: "send_signin_req", variable: "target_url")
         conn |> redirect(302, target_url)
 
       _ ->
         relay_state = State.gen_id()
 
+        Logger.info(relay_state, function: "send_signin_req", variable: "relay_state")
+
         {idp_signin_url, req_xml_frag} =
           Helper.gen_idp_signin_req(sp, idp_rec, Map.get(idp, :nameid_format))
+
+        Logger.info(idp_signin_url, function: "send_signin_req", variable: "idp_signin_url")
+        Logger.info(req_xml_frag, function: "send_signin_req", variable: "req_xml_frag")
 
         conn
         |> configure_session(renew: true)
