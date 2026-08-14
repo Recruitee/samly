@@ -73,6 +73,7 @@ defmodule Samly.AuthHandler do
           Helper.gen_idp_signin_req(sp, idp_rec, Map.get(idp, :nameid_format))
 
         conn
+        |> State.delete_assertion(assertion_key)
         |> configure_session(renew: true)
         |> put_session("relay_state", relay_state)
         |> put_session("idp_id", idp_id)
