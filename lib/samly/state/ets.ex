@@ -23,6 +23,7 @@ defmodule Samly.State.ETS do
   """
 
   alias Samly.Assertion
+  alias Samly.State.Store
 
   @behaviour Samly.State.Store
 
@@ -46,7 +47,7 @@ defmodule Samly.State.ETS do
   @impl Samly.State.Store
   def get_assertion(_conn, assertion_key, assertions_table) do
     case :ets.lookup(assertions_table, assertion_key) do
-      [{^assertion_key, %Assertion{} = assertion}] -> validate_assertion_expiry(assertion)
+      [{^assertion_key, %Assertion{} = assertion}] -> Store.validate_assertion_expiry(assertion)
       _ -> nil
     end
   end
@@ -61,19 +62,5 @@ defmodule Samly.State.ETS do
   def delete_assertion(conn, assertion_key, assertions_table) do
     :ets.delete(assertions_table, assertion_key)
     conn
-  end
-
-  defp validate_assertion_expiry(
-         %Assertion{subject: %{notonorafter: not_on_or_after}} = assertion
-       ) do
-    now = DateTime.utc_now()
-
-    case DateTime.from_iso8601(not_on_or_after) do
-      {:ok, not_on_or_after, _} ->
-        if DateTime.compare(now, not_on_or_after) == :lt, do: assertion, else: nil
-
-      _ ->
-        nil
-    end
   end
 end
