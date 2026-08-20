@@ -1,5 +1,9 @@
 # CHANGELOG
 
++   Merged upstream samly v1.4.0 (5f4c507); keeps a custom SAML payload decoder (strips XML comments, auto-detects deflate)
++   SAML payload decoding returns `{:error, {:invalid_response, ...}}` instead of crashing on malformed XML - xmerl signals fatal parse errors with exit, which the existing rescue could not catch
++   XML entity expansion is disabled (XXE protection) for both IdP metadata and SAML response/request parsing, set explicitly via `allow_entities: false` so it holds regardless of the OTP xmerl default. Requires OTP 26.0.1+ (enforced via `elixir: "~> 1.19"`).
+
 ### v1.4.0
 +   remove uri double encoding thanks to @DiaanEngelbrecht
 +   fix esaml initialization thanks to @bopm
@@ -9,7 +13,7 @@
 +   Added dialyzer checks
 +   Changed internal function layout to report errors more granularly
 +   Verified with updates to esaml dependency
-+   Client can refresh the runtime provider config without restarting the app from [bernardd](https://github.com/dropbox/samly/pull/7)
++   Client can refresh the runtime provider config without restarting the app (thanks bernardd)
 
 ### v1.2.0
 +   Metadata can be specified directly in the IdP config rather than requiring a file

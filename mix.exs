@@ -12,7 +12,10 @@ defmodule Samly.Mixfile do
       description: @description,
       docs: docs(),
       package: package(),
-      elixir: "~> 1.10",
+      # ~> 1.19 requires OTP 26+, which the allow_entities scan option needs
+      # (see lib/samly/helper.ex and lib/samly/idp_data.ex). Keeps a too-old OTP
+      # a loud compile error instead of silent SSO failures at runtime.
+      elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
       deps: deps()
     ]
@@ -47,7 +50,7 @@ defmodule Samly.Mixfile do
 
   defp package() do
     [
-      maintainers: ["dropbox", "KMC"],
+      maintainers: ["handnot2"],
       files: ["config", "lib", "LICENSE", "mix.exs", "README.md"],
       licenses: ["MIT"],
       links: %{"GitHub" => @source_url}

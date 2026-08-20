@@ -110,7 +110,7 @@ defmodule Samly.IdpData do
   end
 
   @spec save_idp_config(%IdpData{}, map()) :: %IdpData{}
-  defp save_idp_config(idp_data, %{id: id, sp_id: sp_id} = opts_map)
+  defp save_idp_config(%IdpData{} = idp_data, %{id: id, sp_id: sp_id} = opts_map)
        when is_binary(id) and is_binary(sp_id) do
     %IdpData{idp_data | id: id, sp_id: sp_id, base_url: Map.get(opts_map, :base_url)}
     |> set_metadata(opts_map)
@@ -153,7 +153,7 @@ defmodule Samly.IdpData do
   end
 
   @spec update_esaml_recs(%IdpData{}, %{required(id()) => %SpData{}}, map()) :: %IdpData{}
-  defp update_esaml_recs(idp_data, service_providers, opts_map) do
+  defp update_esaml_recs(%IdpData{} = idp_data, service_providers, opts_map) do
     case Map.get(service_providers, idp_data.sp_id) do
       %SpData{} = sp ->
         idp_data = %IdpData{idp_data | esaml_idp_rec: to_esaml_idp_metadata(idp_data, opts_map)}
