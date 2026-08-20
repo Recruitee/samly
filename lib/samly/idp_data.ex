@@ -260,12 +260,15 @@ defmodule Samly.IdpData do
   end
 
   @spec from_xml(binary, %IdpData{}) :: %IdpData{}
-  defp from_xml(metadata_xml, idp_data) when is_binary(metadata_xml) do
+  defp from_xml(metadata_xml, %IdpData{} = idp_data) when is_binary(metadata_xml) do
     xml_opts = [
       space: :normalize,
       namespace_conformant: true,
       comments: false,
-      default_attrs: true
+      default_attrs: true,
+      # XML entity expansion off (XXE protection). Set explicitly so it holds
+      # regardless of the OTP version's xmerl default. Requires OTP 26.0.1+.
+      allow_entities: false
     ]
 
     md_xml = SweetXml.parse(metadata_xml, xml_opts)

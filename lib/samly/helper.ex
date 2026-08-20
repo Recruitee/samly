@@ -130,7 +130,7 @@ defmodule Samly.Helper do
     rescue
       ErlangError -> :erlang.binary_to_list(data)
     end
-    |> :xmerl_scan.string(namespace_conformant: true, comments: false)
+    |> :xmerl_scan.string(namespace_conformant: true, comments: false, allow_entities: false)
     |> elem(0)
   end
 end

@@ -295,4 +295,22 @@ defmodule SamlyIdpDataTest do
     %IdpData{} = idp_data = IdpData.load_provider(idp_config, sps)
     assert idp_data.nameid_format == :unknown
   end
+
+  test "metadata-with-entity-declaration-is-rejected", %{sps: sps} do
+    idp_config = Map.merge(@idp_config1, %{metadata: entity_metadata()})
+
+    assert {:fatal, _} = catch_exit(IdpData.load_provider(idp_config, sps))
+  end
+
+  defp entity_metadata do
+    entity_id = "http://samly.idp:8082/simplesaml/saml2/idp/metadata.php"
+
+    "test/data/idp_metadata.xml"
+    |> File.read!()
+    |> String.replace(
+      ~s(<?xml version="1.0"?>),
+      ~s(<?xml version="1.0"?>\n<!DOCTYPE md:EntityDescriptor [<!ENTITY eid "#{entity_id}">]>)
+    )
+    |> String.replace(~s(entityID="#{entity_id}"), ~s(entityID="&eid;"))
+  end
 end
