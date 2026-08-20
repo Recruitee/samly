@@ -114,6 +114,9 @@ defmodule Samly.Helper do
       {:ok, xml}
     rescue
       error -> {:error, {:invalid_response, "#{inspect(error)}"}}
+    catch
+      # xmerl signals fatal parse errors with exit, which rescue cannot catch
+      :exit, reason -> {:error, {:invalid_response, "#{inspect(reason)}"}}
     end
   end
 
