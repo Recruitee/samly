@@ -39,6 +39,14 @@ defmodule Samly.StateTest do
     end
 
     test "get failure for expired assertion key", %{conn: conn} do
+      not_on_or_after = DateTime.utc_now() |> DateTime.add(-8, :hour) |> DateTime.to_iso8601()
+      assertion = %Samly.Assertion{subject: %{notonorafter: not_on_or_after}}
+      assertion_key = {"idp1", "name1"}
+      conn = Samly.State.put_assertion(conn, assertion_key, assertion)
+      assert is_nil(Samly.State.get_assertion(conn, {"idp1", "name1"}))
+    end
+
+    test "get failure for assertion without a parsable expiry", %{conn: conn} do
       assertion = %Samly.Assertion{}
       assertion_key = {"idp1", "name1"}
       conn = Samly.State.put_assertion(conn, assertion_key, assertion)
@@ -78,6 +86,14 @@ defmodule Samly.StateTest do
     end
 
     test "get failure for expired assertion key", %{conn: conn} do
+      not_on_or_after = DateTime.utc_now() |> DateTime.add(-8, :hour) |> DateTime.to_iso8601()
+      assertion = %Samly.Assertion{subject: %{notonorafter: not_on_or_after}}
+      assertion_key = {"idp1", "name1"}
+      conn = Samly.State.put_assertion(conn, assertion_key, assertion)
+      assert is_nil(Samly.State.get_assertion(conn, {"idp1", "name1"}))
+    end
+
+    test "get failure for assertion without a parsable expiry", %{conn: conn} do
       assertion = %Samly.Assertion{}
       assertion_key = {"idp1", "name1"}
       conn = Samly.State.put_assertion(conn, assertion_key, assertion)
