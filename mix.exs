@@ -32,7 +32,7 @@ defmodule Samly.Mixfile do
   defp deps() do
     [
       {:plug, "~> 1.14"},
-      {:esaml, "~> 4.6"},
+      {:esaml, github: "recruitee/esaml", ref: "ef0cde2"},
       {:sweet_xml, "~> 0.7"},
       {:dialyxir, "~> 1.0", only: [:dev], runtime: false},
       {:ex_doc, "~> 0.26", only: :dev, runtime: false}
