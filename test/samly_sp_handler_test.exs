@@ -46,6 +46,21 @@ defmodule SamlySpHandlerTest do
     refute conn.resp_body =~ "<script>"
   end
 
+  test "a non-binary RelayState is rejected, not crashed on" do
+    install_idp(debug_mode: false)
+
+    conn =
+      Plug.Test.conn(:post, "/sp/consume/idp1", %{
+        "SAMLResponse" => "<script>alert(1)</script>",
+        "RelayState" => %{"nested" => "map"}
+      })
+      |> Plug.Test.init_test_session(%{})
+      |> Samly.Router.call([])
+
+    assert conn.status == 403
+    assert conn.resp_body =~ "access_denied"
+  end
+
   defp install_idp(debug_mode: debug_mode) do
     sp_data = SpData.load_provider(@sp_config)
     idp_config = Map.put(@idp_config, :debug_mode, debug_mode)

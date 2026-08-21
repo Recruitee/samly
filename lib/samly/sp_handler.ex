@@ -210,6 +210,10 @@ defmodule Samly.SPHandler do
     #     conn |> send_resp(500, "request_failed")
   end
 
-  defp safe_decode_www_form(nil), do: ""
-  defp safe_decode_www_form(data), do: URI.decode_www_form(data)
+  # RelayState comes straight from the request body; a nested param
+  # (RelayState[a]=b) parses to a map, which URI.decode_www_form/1 would
+  # crash on. Anything non-binary decodes to "" and fails relay-state
+  # validation instead.
+  defp safe_decode_www_form(data) when is_binary(data), do: URI.decode_www_form(data)
+  defp safe_decode_www_form(_data), do: ""
 end
