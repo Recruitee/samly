@@ -11,13 +11,9 @@ This has been used in the wild with the following Identity Providers:
 + Nexus GO
 + Shibboleth
 + SimpleSAMLphp
++ Google
 
-Please send a note by DM if you have successfully used `Samly` with other Identity Providers.
-
-[![Inline docs](http://inch-ci.org/github/handnot2/samly.svg)](http://inch-ci.org/github/handnot2/samly)
-
-This library uses Erlang [`esaml`](https://github.com/handnot2/esaml) to provide
-plug enabled routes.
+This library uses Erlang [`esaml`](https://github.com/handnot2/esaml) to provide plug enabled routes.
 
 ## Setup
 
@@ -31,7 +27,7 @@ plug enabled routes.
 defp deps() do
   [
     # ...
-    {:samly, "~> 1.0.0"},
+    {:samly, "~> 1.0"},
   ]
 end
 ```
@@ -45,7 +41,7 @@ Add `Samly.Provider` to your application supervision tree.
 
 children = [
   # ...
-  {Samly.Provider, []},
+  {Samly.Provider, []}
 ]
 ```
 
@@ -155,7 +151,7 @@ in this model look different.
 #### Target URL for Sign-In and Sign-Out Actions
 
 The sign-in and sign-out URLs (HTTP GET) mentioned above optionally take a `target_url`
-query parameter. `Samly` will redirect the browser to these URLs upon successfuly
+query parameter. `Samly` will redirect the browser to these URLs upon successfully
 completing the sign-in/sign-out operations initiated from your application.
 
 > This `target_url` query parameter value must be `x-www-form-urlencoded`.
@@ -216,7 +212,8 @@ config :samly, Samly.Provider,
 | `id` | _(mandatory)_ This will be the idp_id in the URLs |
 | `sp_id` | _(mandatory)_ The service provider definition to be used with this Identity Provider definition |
 | `base_url` | _(optional)_ If missing `Samly` will use the current URL to derive this. It is better to define this in production deployment. |
-| `metadata_file` | _(mandatory)_ Path to the IdP metadata XML file obtained from the Identity Provider. |
+| `metadata_file` | _(mandatory if `metadata` is not set)_ Path to the IdP metadata XML file obtained from the Identity Provider. This will be ignored if `metadata` is non-nil. |
+| `metadata` | _(mandatory if `metadata_file` is not set))_ String containing IdP metadata XML obtained from the Identity Provider. |
 | `pre_session_create_pipeline` | _(optional)_ Check the customization section. |
 | `use_redirect_for_req` | _(optional)_ Default is `false`. When this is `false`, `Samly` will POST to the IdP SAML endpoints. |
 | `sign_requests`, `sign_metadata` | _(optional)_ Default is `true`. |
@@ -258,6 +255,14 @@ config :samly, Samly.State,
 |:------------|:-----------|
 | `opts` | _(optional)_ The `:key` is the name of the session key where assertion is stored. Default is `:samly_assertion`. |
 
+#### XML entities and OTP version
+
+`Samly` disables XML entity expansion (XXE protection) when parsing both IdP
+metadata and SAML responses/requests. It sets `allow_entities: false`
+explicitly rather than relying on the xmerl default, so the behavior is the
+same on every supported runtime. This option requires **OTP 26.0.1 or newer**
+(xmerl 1.3.32); the fork's `mix.exs` requires Elixir 1.19+, which enforces it.
+
 ## SAML Assertion
 
 Once authentication is completed successfully, IdP sends a "consume" SAML
@@ -294,6 +299,7 @@ with the IdP but before a session is created.
 
 This is just a vanilla Plug Pipeline. The SAML assertion from
 the IdP is made available in the Plug connection as a "private".
+(The pipeline plugs have access to the `idp_id` in this assertion.)
 If you want to derive new attributes, create an Elixir map data (`%{}`)
 and update the `computed` field of the SAML assertion and put it back
 in the Plug connection private with `Conn.put_private` call.
@@ -310,6 +316,9 @@ defmodule MySamlyPipeline do
 
   def compute_attributes(conn, _opts) do
     assertion = conn.private[:samly_assertion]
+
+    # This assertion has the idp_id
+    # %Assertion{idp_id: idp_id} = assertion
 
     first_name = Map.get(assertion.attributes, "first_name")
     last_name  = Map.get(assertion.attributes, "last_name")
@@ -354,7 +363,7 @@ Take a look at the implementation of `Samly.State.ETS` or `Samly.State.Session` 
 ## Security Related
 
 +   `Samly` initiated sign-in/sign-out requests send `RelayState` to IdP and expect to get that back. Mismatched or missing `RelayState` in IdP responses to SP initiated requests will fail (with HTTP `403 access_denied`).
-+   Besides the `RelayState`, the request and response `idp_id`s must match. Reponse is rejected if they don't.
++   Besides the `RelayState`, the request and response `idp_id`s must match. Response is rejected if they don't.
 +   `Samly` makes the original request ID that an auth response corresponds to
 in `Samly.Subject.in_response_to` field. It is the responsibility of the consuming application to use this information along with the validity period in the assertion to check for **replay attacks**. The consuming application should use the `pre_session_create_pipeline` to perform this check. You may need a database or a distributed cache such as memcache in a clustered setup to keep track of these request IDs for their validity period to perform this check. Be aware that `in_response_to` field is **not** set when IDP initialized authorization flow is used.
 +   OOTB SAML requests and responses are signed.
@@ -367,7 +376,7 @@ in `Samly.Subject.in_response_to` field. It is the responsibility of the consumi
     expects the SAML reqsponses to be signed (both assertion and envelopes). If your IdP is
     not configured to sign, you will have to explicitly turn them off in the configuration.
     It is highly recommended to turn signing on in production deployments.
-+   Encypted Assertions are supported in `Samly`. There are no explicit config settings for this. Decryption happens automatically when encrypted assertions are detected in the SAML response.
++   Encrypted Assertions are supported in `Samly`. There are no explicit config settings for this. Decryption happens automatically when encrypted assertions are detected in the SAML response.
     > [Supported Encryption algorithms](https://github.com/handnot2/esaml#assertion-encryption)
 +   Make sure to use HTTPS URLs in production deployments.
 

@@ -48,7 +48,7 @@ defmodule Samly.Provider do
           value
 
         unknown ->
-          Logger.warn(
+          Logger.warning(
             "[Samly] invalid_data idp_id_from: #{inspect(unknown)}. Using :path_segment"
           )
 
@@ -56,12 +56,15 @@ defmodule Samly.Provider do
       end
 
     Application.put_env(:samly, :idp_id_from, idp_id_from)
-    refresh_providers()
+    :esaml_util.start_ets()
 
-    {:ok, %{}}
+    refresh_providers()
   end
 
-  @doc false
+  @doc """
+  Refresh the provider configuration, allowing runtime-configuration to be applied after
+  application start.
+  """
   def refresh_providers do
     opts = opts()
 
@@ -72,6 +75,8 @@ defmodule Samly.Provider do
 
     Application.put_env(:samly, :service_providers, service_providers)
     Application.put_env(:samly, :identity_providers, identity_providers)
+
+    {:ok, %{}}
   end
 
   defp opts, do: Application.get_env(:samly, Samly.Provider, [])

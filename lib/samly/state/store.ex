@@ -57,4 +57,25 @@ defmodule Samly.State.Store do
   after calling this.
   """
   @callback delete_assertion(Conn.t(), assertion_key(), opts()) :: Conn.t() | no_return()
+
+  @doc """
+  Returns the assertion if its subject's `notonorafter` is still in the future,
+  `nil` otherwise - including when the expiry is missing or unparsable.
+
+  Store implementations should run every assertion they return from
+  `c:get_assertion/3` through this check, so an expired session is never
+  handed back to the application (CVE-2024-25718).
+  """
+  @spec validate_assertion_expiry(Assertion.t()) :: Assertion.t() | nil
+  def validate_assertion_expiry(%Assertion{subject: %{notonorafter: not_on_or_after}} = assertion) do
+    now = DateTime.utc_now()
+
+    case DateTime.from_iso8601(not_on_or_after) do
+      {:ok, not_on_or_after, _} ->
+        if DateTime.compare(now, not_on_or_after) == :lt, do: assertion, else: nil
+
+      _ ->
+        nil
+    end
+  end
 end

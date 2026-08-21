@@ -71,22 +71,19 @@ defmodule Samly.Helper do
     with {:ok, xml_frag} <- decode_saml_payload(saml_encoding, saml_response),
          {:ok, assertion_rec} <- :esaml_sp.validate_assertion(xml_frag, sp) do
       {:ok, Assertion.from_rec(assertion_rec)}
-    else
-      {:error, reason} -> {:error, reason}
-      error -> {:error, {:invalid_request, "#{inspect(error)}"}}
     end
   end
 
   def decode_idp_signout_resp(sp, saml_encoding, saml_response) do
     resp_ns = [
-      {'samlp', 'urn:oasis:names:tc:SAML:2.0:protocol'},
-      {'saml', 'urn:oasis:names:tc:SAML:2.0:assertion'},
-      {'ds', 'http://www.w3.org/2000/09/xmldsig#'}
+      {~c"samlp", ~c"urn:oasis:names:tc:SAML:2.0:protocol"},
+      {~c"saml", ~c"urn:oasis:names:tc:SAML:2.0:assertion"},
+      {~c"ds", ~c"http://www.w3.org/2000/09/xmldsig#"}
     ]
 
     with {:ok, xml_frag} <- decode_saml_payload(saml_encoding, saml_response),
          nodes when is_list(nodes) and length(nodes) == 1 <-
-           :xmerl_xpath.string('/samlp:LogoutResponse', xml_frag, [{:namespace, resp_ns}]) do
+           :xmerl_xpath.string(~c"/samlp:LogoutResponse", xml_frag, [{:namespace, resp_ns}]) do
       :esaml_sp.validate_logout_response(xml_frag, sp)
     else
       _ -> {:error, :invalid_request}
@@ -95,13 +92,13 @@ defmodule Samly.Helper do
 
   def decode_idp_signout_req(sp, saml_encoding, saml_request) do
     req_ns = [
-      {'samlp', 'urn:oasis:names:tc:SAML:2.0:protocol'},
-      {'saml', 'urn:oasis:names:tc:SAML:2.0:assertion'}
+      {~c"samlp", ~c"urn:oasis:names:tc:SAML:2.0:protocol"},
+      {~c"saml", ~c"urn:oasis:names:tc:SAML:2.0:assertion"}
     ]
 
     with {:ok, xml_frag} <- decode_saml_payload(saml_encoding, saml_request),
          nodes when is_list(nodes) and length(nodes) == 1 <-
-           :xmerl_xpath.string('/samlp:LogoutRequest', xml_frag, [{:namespace, req_ns}]) do
+           :xmerl_xpath.string(~c"/samlp:LogoutRequest", xml_frag, [{:namespace, req_ns}]) do
       :esaml_sp.validate_logout_request(xml_frag, sp)
     else
       _ -> {:error, :invalid_request}
@@ -114,6 +111,9 @@ defmodule Samly.Helper do
       {:ok, xml}
     rescue
       error -> {:error, {:invalid_response, "#{inspect(error)}"}}
+    catch
+      # xmerl signals fatal parse errors with exit, which rescue cannot catch
+      :exit, reason -> {:error, {:invalid_response, "#{inspect(reason)}"}}
     end
   end
 
@@ -127,7 +127,7 @@ defmodule Samly.Helper do
     rescue
       ErlangError -> :erlang.binary_to_list(data)
     end
-    |> :xmerl_scan.string(namespace_conformant: true, comments: false)
+    |> :xmerl_scan.string(namespace_conformant: true, comments: false, allow_entities: false)
     |> elem(0)
   end
 end

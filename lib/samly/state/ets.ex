@@ -23,6 +23,7 @@ defmodule Samly.State.ETS do
   """
 
   alias Samly.Assertion
+  alias Samly.State.Store
 
   @behaviour Samly.State.Store
 
@@ -46,7 +47,7 @@ defmodule Samly.State.ETS do
   @impl Samly.State.Store
   def get_assertion(_conn, assertion_key, assertions_table) do
     case :ets.lookup(assertions_table, assertion_key) do
-      [{^assertion_key, %Assertion{} = assertion}] -> assertion
+      [{^assertion_key, %Assertion{} = assertion}] -> Store.validate_assertion_expiry(assertion)
       _ -> nil
     end
   end

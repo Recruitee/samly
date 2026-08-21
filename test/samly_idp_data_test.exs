@@ -44,6 +44,13 @@ defmodule SamlyIdpDataTest do
     metadata_file: "test/data/idp_metadata.xml"
   }
 
+  @idp_config3 %{
+    id: "idp3",
+    sp_id: "sp2",
+    base_url: "http://samly.howto:4003/sso",
+    metadata: File.read!("test/data/idp_metadata.xml")
+  }
+
   setup context do
     sp_data1 = SpData.load_provider(@sp_config1)
     sp_data2 = SpData.load_provider(@sp_config2)
@@ -194,6 +201,13 @@ defmodule SamlyIdpDataTest do
     assert entity_id == :undefined
   end
 
+  test "metadata supplied inline rather than as file", %{sps: sps} do
+    %IdpData{} = idp_data = IdpData.load_provider(@idp_config3, sps)
+    assert idp_data.valid?
+    Esaml.esaml_sp(entity_id: entity_id) = idp_data.esaml_sp_rec
+    assert entity_id == :undefined
+  end
+
   @tag :skip
   test "invalid-idp-config-1", %{sps: sps} do
     idp_config = %{@idp_config1 | id: ""}
@@ -248,7 +262,7 @@ defmodule SamlyIdpDataTest do
 
   test "nameid-format-in-metadata-but-not-config-should-use-metadata", %{sps: sps} do
     %IdpData{} = idp_data = IdpData.load_provider(@idp_config1, sps)
-    assert idp_data.nameid_format == 'urn:oasis:names:tc:SAML:2.0:nameid-format:transient'
+    assert idp_data.nameid_format == ~c"urn:oasis:names:tc:SAML:2.0:nameid-format:transient"
   end
 
   test "nameid-format-in-config-but-not-metadata-should-use-config", %{sps: sps} do
@@ -259,7 +273,7 @@ defmodule SamlyIdpDataTest do
       })
 
     %IdpData{} = idp_data = IdpData.load_provider(idp_config, sps)
-    assert idp_data.nameid_format == 'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress'
+    assert idp_data.nameid_format == ~c"urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"
   end
 
   test "nameid-format-in-metadata-and-config-should-use-config", %{sps: sps} do
@@ -269,7 +283,7 @@ defmodule SamlyIdpDataTest do
       })
 
     %IdpData{} = idp_data = IdpData.load_provider(idp_config, sps)
-    assert idp_data.nameid_format == 'urn:oasis:names:tc:SAML:2.0:nameid-format:persistent'
+    assert idp_data.nameid_format == ~c"urn:oasis:names:tc:SAML:2.0:nameid-format:persistent"
   end
 
   test "nameid-format-in-neither-metadata-nor-config-should-be-unknown", %{sps: sps} do
@@ -280,5 +294,23 @@ defmodule SamlyIdpDataTest do
 
     %IdpData{} = idp_data = IdpData.load_provider(idp_config, sps)
     assert idp_data.nameid_format == :unknown
+  end
+
+  test "metadata-with-entity-declaration-is-rejected", %{sps: sps} do
+    idp_config = Map.merge(@idp_config1, %{metadata: entity_metadata()})
+
+    assert {:fatal, _} = catch_exit(IdpData.load_provider(idp_config, sps))
+  end
+
+  defp entity_metadata do
+    entity_id = "http://samly.idp:8082/simplesaml/saml2/idp/metadata.php"
+
+    "test/data/idp_metadata.xml"
+    |> File.read!()
+    |> String.replace(
+      ~s(<?xml version="1.0"?>),
+      ~s(<?xml version="1.0"?>\n<!DOCTYPE md:EntityDescriptor [<!ENTITY eid "#{entity_id}">]>)
+    )
+    |> String.replace(~s(entityID="#{entity_id}"), ~s(entityID="&eid;"))
   end
 end

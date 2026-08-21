@@ -19,6 +19,7 @@ defmodule Samly.State.Session do
 
   alias Plug.Conn
   alias Samly.Assertion
+  alias Samly.State.Store
 
   @behaviour Samly.State.Store
 
@@ -34,7 +35,7 @@ defmodule Samly.State.Session do
     %{key: key} = opts
 
     case Conn.get_session(conn, key) do
-      {^assertion_key, %Assertion{} = assertion} -> assertion
+      {^assertion_key, %Assertion{} = assertion} -> Store.validate_assertion_expiry(assertion)
       _ -> nil
     end
   end

@@ -52,7 +52,7 @@ defmodule Samly.SpData do
 
   @spec load_provider(map) :: %SpData{} | no_return
   def load_provider(%{} = opts_map) do
-    sp_data = %__MODULE__{
+    %__MODULE__{
       id: Map.get(opts_map, :id, ""),
       entity_id: Map.get(opts_map, :entity_id, ""),
       certfile: Map.get(opts_map, :certfile, ""),
@@ -63,8 +63,9 @@ defmodule Samly.SpData do
       org_displayname: Map.get(opts_map, :org_displayname, @default_org_displayname),
       org_url: Map.get(opts_map, :org_url, @default_org_url)
     }
-
-    sp_data |> set_id(opts_map) |> load_cert(opts_map) |> load_key(opts_map)
+    |> set_id(opts_map)
+    |> load_cert(opts_map)
+    |> load_key(opts_map)
   end
 
   @spec set_id(%SpData{}, map()) :: %SpData{}
