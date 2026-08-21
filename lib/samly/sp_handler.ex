@@ -34,6 +34,8 @@ defmodule Samly.SPHandler do
     saml_response = conn.body_params["SAMLResponse"]
     relay_state = conn.body_params["RelayState"] |> safe_decode_www_form()
 
+    # An unexpected return shape from a with-step raises WithClauseError by
+    # design - fail closed and loud instead of masking a broken contract as 403.
     with {:ok, %Assertion{} = assertion} <-
            Helper.decode_idp_auth_resp(sp, saml_encoding, saml_response),
          :ok <- validate_authresp(conn, assertion, relay_state),
@@ -70,9 +72,6 @@ defmodule Samly.SPHandler do
           _ ->
             conn |> send_resp(403, "access_denied #{inspect(reason)}")
         end
-
-      _ ->
-        conn |> send_resp(403, "access_denied")
     end
 
     # rescue
