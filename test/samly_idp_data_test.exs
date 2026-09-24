@@ -296,6 +296,29 @@ defmodule SamlyIdpDataTest do
     assert idp_data.nameid_format == :unknown
   end
 
+  test "multiple-nameid-formats-in-metadata-and-none-in-config-should-be-unknown", %{sps: sps} do
+    idp_config =
+      Map.merge(@idp_config1, %{
+        metadata_file: "test/data/multiple_nameid_formats_metadata.xml"
+      })
+
+    %IdpData{} = idp_data = IdpData.load_provider(idp_config, sps)
+    assert idp_data.nameid_format == :unknown
+  end
+
+  test "multiple-nameid-formats-in-metadata-but-config-override-present-should-use-config", %{
+    sps: sps
+  } do
+    idp_config =
+      Map.merge(@idp_config1, %{
+        metadata_file: "test/data/multiple_nameid_formats_metadata.xml",
+        nameid_format: :email
+      })
+
+    %IdpData{} = idp_data = IdpData.load_provider(idp_config, sps)
+    assert idp_data.nameid_format == ~c"urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress"
+  end
+
   test "metadata-with-entity-declaration-is-rejected", %{sps: sps} do
     idp_config = Map.merge(@idp_config1, %{metadata: entity_metadata()})
 

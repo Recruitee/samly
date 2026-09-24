@@ -77,7 +77,7 @@ defmodule Samly.IdpData do
   @post "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
 
   @entity_id_selector ~x"//#{@entdesc}/@entityID"sl
-  @nameid_format_selector ~x"//#{@entdesc}/#{@idpdesc}/#{@nameid}/text()"s
+  @nameid_format_selector ~x"//#{@entdesc}/#{@idpdesc}/#{@nameid}/text()"sl
   @req_signed_selector ~x"//#{@entdesc}/#{@idpdesc}/@#{@signedreq}"s
   @sso_redirect_url_selector ~x"//#{@entdesc}/#{@idpdesc}/#{@ssos}[@Binding = '#{@redirect}']/@Location"s
   @sso_post_url_selector ~x"//#{@entdesc}/#{@idpdesc}/#{@ssos}[@Binding = '#{@post}']/@Location"s
@@ -374,9 +374,13 @@ defmodule Samly.IdpData do
 
   @spec get_nameid_format(SweetXml.xmlElement()) :: nameid_format()
   def get_nameid_format(md_elem) do
-    case get_data(md_elem, @nameid_format_selector) do
-      "" -> :unknown
-      nameid_format -> to_charlist(nameid_format)
+    md_elem
+    |> xpath(@nameid_format_selector |> add_ns())
+    |> Enum.map(&String.trim/1)
+    |> Enum.reject(&(&1 == ""))
+    |> case do
+      [format] -> to_charlist(format)
+      _none_or_many -> :unknown
     end
   end
 
